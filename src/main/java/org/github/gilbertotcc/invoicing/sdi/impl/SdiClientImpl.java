@@ -3,64 +3,68 @@ package org.github.gilbertotcc.invoicing.sdi.impl;
 import static java.lang.String.format;
 
 import java.math.BigInteger;
-import java.time.ZonedDateTime;
-import java.util.GregorianCalendar;
-import java.util.Optional;
 import java.util.logging.Logger;
 
-import javax.xml.datatype.XMLGregorianCalendar;
-
-import com.github.gilbertotcc.invoicing.sdi.service.ErroreInvioType;
-import com.github.gilbertotcc.invoicing.sdi.service.RispostaSdIRiceviFileType;
-import com.github.gilbertotcc.invoicing.sdi.service.SdIRiceviFileService;
+import com.github.gilbertotcc.invoicing.sdi.invoiceService.FileSdIBaseType;
+import com.github.gilbertotcc.invoicing.sdi.invoiceService.FileSdIType;
+import com.github.gilbertotcc.invoicing.sdi.invoiceService.RispostaSdINotificaEsitoType;
+import com.github.gilbertotcc.invoicing.sdi.invoiceService.RispostaSdIRiceviFileType;
+import com.github.gilbertotcc.invoicing.sdi.invoiceService.SdIRiceviFileService;
+import com.github.gilbertotcc.invoicing.sdi.invoiceService.SdIRiceviNotificaService;
 import org.github.gilbertotcc.invoicing.sdi.SdiClient;
 import org.github.gilbertotcc.invoicing.sdi.model.Invoice;
-import org.github.gilbertotcc.invoicing.sdi.model.Result;
+import org.github.gilbertotcc.invoicing.sdi.model.Notification;
+import org.github.gilbertotcc.invoicing.sdi.model.SendInvoiceResponse;
+import org.github.gilbertotcc.invoicing.sdi.model.SendNotificationResponse;
 
 public class SdiClientImpl implements SdiClient {
 
     private static final Logger LOGGER = Logger.getLogger(SdiClientImpl.class.getName());
 
-    final SdIRiceviFileService service;
+    private final SdIRiceviFileService invoiceService;
 
-    SdiClientImpl(final SdIRiceviFileService service) {
-        this.service = service;
+    private final SdIRiceviNotificaService notificationService;
+
+    SdiClientImpl(final SdIRiceviFileService invoiceService, final SdIRiceviNotificaService notificationService) {
+        this.invoiceService = invoiceService;
+        this.notificationService = notificationService;
     }
 
     public SdiClientImpl() {
-        this(new SdIRiceviFileService());
+        this(new SdIRiceviFileService(), new SdIRiceviNotificaService());
     }
 
     @Override
-    public Result sendInvoice(final Invoice invoice) {
+    public SendInvoiceResponse sendInvoice(final Invoice invoice) {
         LOGGER.info(() -> format("Sending invoice %s", invoice));
-        final RispostaSdIRiceviFileType response = service
-                .getSdIRiceviFilePort()
-                .riceviFile(invoice.toSdiInvoice());
 
-        final String sdiIdentifier = Optional.ofNullable(response.getIdentificativoSdI())
-                .map(BigInteger::toString)
-                .orElse(null);
-        final ZonedDateTime sdiReceptionDateTime = Optional.ofNullable(response.getDataOraRicezione())
-                .map(XMLGregorianCalendar::toGregorianCalendar)
-                .map(GregorianCalendar::toZonedDateTime)
-                .orElse(null);
-        final Result.Error error = Optional.ofNullable(response.getErrore())
-                .map(SdiClientImpl::resultErrorOf)
-                .orElse(null);
-        return Result.of(sdiIdentifier, sdiReceptionDateTime, error);
+        FileSdIBaseType fileSdIBaseType = new FileSdIBaseType();
+        fileSdIBaseType.setNomeFile(invoice.getAttachment().getFilename());
+        fileSdIBaseType.setFile(invoice.getAttachment().getDataHandler());
+
+        RispostaSdIRiceviFileType response = invoiceService
+                .getSdIRiceviFilePort()
+                .riceviFile(fileSdIBaseType);
+
+        return SendInvoiceResponse.of(response);
     }
 
-    private static Result.Error resultErrorOf(final ErroreInvioType sendingError) {
-        switch (sendingError) {
-            case EI_01:
-                return Result.Error.EMPTY_FILE;
-            case EI_02:
-                return Result.Error.SERVICE_NOT_AVAILABLE;
-            case EI_03:
-                return Result.Error.USER_NOT_ENABLED;
-            default:
-                return Result.Error.UNKNOWN;
-        }
+    @Override
+    public SendNotificationResponse sendNotification(final Notification notification) {
+        LOGGER.info(() ->
+                format("Send notification %s for invoiceId %s",
+                notification.getAttachment(),
+                notification.getSdiIdentifier()));
+
+        FileSdIType fileSdIType = new FileSdIType();
+        fileSdIType.setIdentificativoSdI(new BigInteger(notification.getSdiIdentifier()));
+        fileSdIType.setNomeFile(notification.getAttachment().getFilename());
+        fileSdIType.setFile(notification.getAttachment().getDataHandler());
+
+        RispostaSdINotificaEsitoType response = notificationService
+                .getSdIRiceviNotificaPort()
+                .notificaEsito(fileSdIType);
+
+        return SendNotificationResponse.of(response);
     }
 }

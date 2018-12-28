@@ -2,7 +2,9 @@ package org.github.gilbertotcc.invoicing.sdi;
 
 import org.github.gilbertotcc.invoicing.sdi.impl.SdiClientImpl;
 import org.github.gilbertotcc.invoicing.sdi.model.Invoice;
-import org.github.gilbertotcc.invoicing.sdi.model.Result;
+import org.github.gilbertotcc.invoicing.sdi.model.Notification;
+import org.github.gilbertotcc.invoicing.sdi.model.SendInvoiceResponse;
+import org.github.gilbertotcc.invoicing.sdi.model.SendNotificationResponse;
 
 public interface SdiClient {
 
@@ -10,6 +12,8 @@ public interface SdiClient {
         return new SdiClientImpl();
     }
 
-    Result sendInvoice(final Invoice invoice);
+    SendInvoiceResponse sendInvoice(final Invoice invoice);
+
+    SendNotificationResponse sendNotification(final Notification notification);
 
 }
