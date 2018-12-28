@@ -3,17 +3,23 @@ package org.github.gilbertotcc.invoicing.sdi.model;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-public class Invoice {
+public class Notification {
+
+    private final String sdiIdentifier;
 
     private final Attachment attachment;
 
-    private Invoice(final Attachment attachment) {
+    private Notification(final String sdiIdentifier, final Attachment attachment) {
+        this.sdiIdentifier = sdiIdentifier;
         this.attachment = attachment;
     }
 
-    public static Invoice of(String pathname) {
-        Attachment attachment = Attachment.of(pathname);
-        return new Invoice(attachment);
+    public static Notification of(final String sdiIdentifier, final Attachment attachment) {
+        return new Notification(sdiIdentifier, attachment);
+    }
+
+    public String getSdiIdentifier() {
+        return sdiIdentifier;
     }
 
     public Attachment getAttachment() {

@@ -57,7 +57,7 @@
                         <bindingFile>${project.basedir}/src/wsdl/bindings.xml</bindingFile>
                     </bindingFiles>
                     <keep>true</keep>
-                    <packageName>com.github.gilbertotcc.invoicing.sdi.service</packageName>
+                    <packageName>com.github.gilbertotcc.invoicing.sdi.invoiceService</packageName>
                 </configuration>
             </plugin>
             <plugin>
@@ -128,7 +128,7 @@
                 <version>0.8.1</version>
                 <configuration>
                     <excludes>
-                        <exclude>**/service/*.class</exclude>
+                        <exclude>**/invoiceService/*.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>
